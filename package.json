@@ -1,0 +1,14 @@
+{
+  "name": "sfpt-editor",
+  "version": "0.1.0",
+  "description": "Cliente SFTP local sencillo con UI web de 2 paneles, editor de texto y secretos cifrados AES-256-GCM.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ssh2": "^1.15.0",
+    "ssh2-sftp-client": "^10.0.3"
+  }
+}

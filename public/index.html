@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SFTP Editor</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Overlay de desbloqueo -->
+  <div id="lockOverlay" class="overlay">
+    <div class="card">
+      <h2>🔒 SFTP Editor</h2>
+      <p id="lockHint" class="hint"></p>
+      <input type="password" id="masterInput" placeholder="Contraseña maestra" autofocus />
+      <button id="unlockBtn">Desbloquear</button>
+      <div id="lockError" class="error"></div>
+    </div>
+  </div>
+
+  <!-- Barra superior -->
+  <header id="topbar">
+    <span class="brand">SFTP Editor</span>
+    <select id="profileSelect"></select>
+    <button id="connectBtn">Conectar</button>
+    <button id="disconnectBtn" disabled>Desconectar</button>
+    <span id="connStatus" class="status off">desconectado</span>
+    <button id="syncBtn">🔄 Sincronizar</button>
+    <span class="spacer"></span>
+    <button id="newProfileBtn">+ Perfil</button>
+    <button id="editProfileBtn">Editar perfil</button>
+    <button id="delProfileBtn">Borrar perfil</button>
+    <button id="lockBtn">Bloquear</button>
+  </header>
+
+  <!-- Dos paneles -->
+  <main id="panels">
+    <section class="panel" id="localPanel">
+      <div class="panel-head">
+        <strong>Local</strong>
+        <input type="text" class="pathbar" data-side="local" />
+        <button class="btn-mkdir" data-side="local" title="Nueva carpeta">📁+</button>
+        <button class="btn-refresh" data-side="local" title="Refrescar">⟳</button>
+      </div>
+      <div class="filelist" data-side="local"></div>
+    </section>
+
+    <section class="panel" id="remotePanel">
+      <div class="panel-head">
+        <strong>Remoto</strong>
+        <input type="text" class="pathbar" data-side="remote" />
+        <button class="btn-mkdir" data-side="remote" title="Nueva carpeta">📁+</button>
+        <button class="btn-refresh" data-side="remote" title="Refrescar">⟳</button>
+      </div>
+      <div class="filelist" data-side="remote"></div>
+    </section>
+  </main>
+
+  <footer id="statusbar"><span id="statusMsg">listo</span></footer>
+
+  <!-- Modal editor -->
+  <div id="editorOverlay" class="overlay hidden">
+    <div class="card editor-card">
+      <div class="editor-head">
+        <span id="editorTitle"></span>
+        <span class="spacer"></span>
+        <button id="editorSave">Guardar</button>
+        <button id="editorClose">Cerrar</button>
+      </div>
+      <textarea id="editorArea" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <!-- Modal perfil -->
+  <div id="profileOverlay" class="overlay hidden">
+    <div class="card profile-card">
+      <h3 id="profileFormTitle">Nuevo perfil</h3>
+      <div class="form-grid">
+        <label>Nombre <input id="pf_name" /></label>
+        <label>Host <input id="pf_host" /></label>
+        <label>Puerto <input id="pf_port" type="number" value="22" /></label>
+        <label>Usuario <input id="pf_user" /></label>
+        <label>Auth
+          <select id="pf_auth"><option value="password">Contraseña</option><option value="key">Clave SSH</option></select>
+        </label>
+        <label class="pf-password">Contraseña <input id="pf_password" type="password" /></label>
+        <label class="pf-key">Ruta clave privada <input id="pf_keyPath" placeholder="C:\Users\usuario\.ssh\id_rsa" /></label>
+        <label class="pf-key">Passphrase (opcional) <input id="pf_passphrase" type="password" /></label>
+        <label class="pf-full">Ruta remota por defecto <input id="pf_remotePath" placeholder="vacío = donde conecte (landing dir)" /></label>
+      </div>
+
+      <label class="jump-toggle"><input type="checkbox" id="pf_useJump" /> Conectar por salto (bastión)</label>
+      <div id="jumpFields" class="form-grid hidden">
+        <label>Jump host <input id="pf_jhost" /></label>
+        <label>Jump puerto <input id="pf_jport" type="number" value="22" /></label>
+        <label>Jump usuario <input id="pf_juser" /></label>
+        <label>Jump auth
+          <select id="pf_jauth"><option value="password">Contraseña</option><option value="key">Clave SSH</option></select>
+        </label>
+        <label class="jf-password">Jump contraseña <input id="pf_jpassword" type="password" /></label>
+        <label class="jf-key">Jump ruta clave <input id="pf_jkeyPath" /></label>
+        <label class="jf-key">Jump passphrase <input id="pf_jpassphrase" type="password" /></label>
+      </div>
+
+      <div class="profile-actions">
+        <button id="profileSave">Guardar perfil</button>
+        <button id="profileCancel">Cancelar</button>
+      </div>
+      <div id="profileError" class="error"></div>
+    </div>
+  </div>
+
+  <!-- Modal Sincronizar -->
+  <div id="syncOverlay" class="overlay hidden">
+    <div class="card sync-card">
+      <div class="sync-head">
+        <h3>🔄 Sincronizar (subida asíncrona)</h3>
+        <span class="spacer"></span>
+        <button id="syncClose">Cerrar</button>
+      </div>
+
+      <div class="sync-config">
+        <label>Perfil destino
+          <select id="sync_profile"></select>
+        </label>
+        <label>Ruta remota destino
+          <input id="sync_dest" placeholder="vacío = donde conecte (landing dir)" />
+        </label>
+        <label>Preset
+          <span class="preset-row">
+            <select id="sync_presetSelect"><option value="">— cargar preset —</option></select>
+            <button id="sync_presetSave" title="Guardar config actual">💾</button>
+            <button id="sync_presetDel" title="Borrar preset">🗑️</button>
+          </span>
+        </label>
+      </div>
+
+      <div class="sync-body">
+        <div class="sync-browser">
+          <div class="sync-browser-head">
+            <strong>Local — marca qué subir</strong>
+            <input type="text" id="sync_localPath" class="pathbar" />
+            <button id="sync_localRefresh" title="Refrescar">⟳</button>
+          </div>
+          <div id="sync_localList" class="filelist"></div>
+        </div>
+        <div class="sync-selected">
+          <strong>Seleccionados (<span id="sync_selCount">0</span>)</strong>
+          <div id="sync_selList" class="sel-list"></div>
+        </div>
+      </div>
+
+      <div class="sync-actions">
+        <button id="sync_start">▶ Iniciar sincronización</button>
+        <button id="sync_cancel" disabled>■ Cancelar</button>
+        <span id="sync_selClear" class="link">limpiar selección</span>
+      </div>
+
+      <div id="sync_progress" class="sync-progress hidden">
+        <div class="bar-wrap"><div id="sync_bar" class="bar"></div></div>
+        <div id="sync_progressText" class="mono"></div>
+        <div id="sync_log" class="sync-log mono"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
