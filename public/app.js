@@ -595,6 +595,10 @@ $('#sync_presetSelect').onchange = () => {
     SY.selected.set(it.localPath, { localPath: it.localPath, isDir: it.isDir, name: nm });
   });
   renderSyncSelected();
+  // Navega el browser a la carpeta padre del primer item para que la
+  // selección se vea marcada, aunque estuvieras en otro path.
+  const first = (p.items || [])[0];
+  if (first) SY.path = parentPath('local', first.localPath);
   syncBrowse(SY.path);
 };
 $('#sync_presetSave').onclick = async () => {
